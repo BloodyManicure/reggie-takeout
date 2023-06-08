@@ -1,5 +1,7 @@
 package com.blackhorse.reggie.filter;
 
+import com.alibaba.fastjson.JSON;
+import com.blackhorse.reggie.common.R;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.AntPathMatcher;
 
@@ -17,6 +19,7 @@ public class LoginCheckFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
+
         HttpServletRequest request = (HttpServletRequest) servletRequest;
         HttpServletResponse response = (HttpServletResponse) servletResponse;
 
@@ -24,11 +27,27 @@ public class LoginCheckFilter implements Filter {
         String[] uriList = new String[] {
           "/employee/login", "/employee/logout", "/backend/**", "/front/**"
         };
+
+        boolean check = check(uriList, requestUri);
+
+        if(check) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        if(request.getSession().getAttribute("employee") != null) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        response.getWriter().write(JSON.toJSONString(R.error("NOTLOGIN")));
     }
+
+
 
     public boolean check(String[] uris, String requestUri) {
         for(String uri : uris) {
-            return PATH_MATCHER.match(uri, requestUri);
+            if(PATH_MATCHER.match(uri, requestUri)) return true;
         }
         return false;
     }
